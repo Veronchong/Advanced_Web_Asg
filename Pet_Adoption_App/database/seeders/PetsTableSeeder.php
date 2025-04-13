@@ -152,10 +152,21 @@ class PetsTableSeeder extends Seeder
         ];
 
         foreach ($pets as $pet) {
-            Pet::updateOrCreate(
-                ['name' => $pet['name']],
-                $pet
-            );
+            // Only set image if file exists
+            if (isset($pet['image']) && 
+                file_exists(storage_path('app/public/'.$pet['image']))) {
+                Pet::updateOrCreate(
+                    ['name' => $pet['name']],
+                    $pet
+                );
+            } else {
+                // Create without image if file doesn't exist
+                unset($pet['image']);
+                Pet::updateOrCreate(
+                    ['name' => $pet['name']],
+                    $pet
+                );
+            }
         }
     }
 }

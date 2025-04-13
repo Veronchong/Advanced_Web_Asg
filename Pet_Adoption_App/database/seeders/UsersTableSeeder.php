@@ -16,7 +16,6 @@ class UsersTableSeeder extends Seeder
         User::truncate();
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        // Use updateOrCreate to be extra safe
         User::updateOrCreate(
             ['email' => 'admin@example.com'],
             [
