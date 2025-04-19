@@ -74,28 +74,43 @@ class PetController extends Controller
 
     public function show(Pet $pet)
     {
-        // Get or initialize recently viewed from session
-        $recentlyViewed = collect(session('recently_viewed', []));
+        // Get from cookie
+        $recentlyViewed = collect(
+            json_decode(request()->cookie('recently_viewed', '[]'), true)
+        );
         
         // Remove current pet and invalid entries
         $recentlyViewed = $recentlyViewed
             ->reject(fn($item) => !is_array($item) || !isset($item['id']) || $item['id'] == $pet->id);
         
         // Add current pet
-        $recentlyViewed->prepend(['id' => $pet->id, 'timestamp' => now()->timestamp]);
+        $recentlyViewed->prepend([
+            'id' => $pet->id, 
+            'timestamp' => now()->timestamp,
+            'name' => $pet->name, // Store additional data if needed
+            'image' => $pet->image
+        ]);
         
         // Keep only last 4
         $recentlyViewed = $recentlyViewed->take(4);
-        
-        // Save to session
-        session(['recently_viewed' => $recentlyViewed->toArray()]);
         
         // Get pets in correct order
         $recentPets = Pet::whereIn('id', $recentlyViewed->pluck('id'))
             ->get()
             ->sortBy(fn($pet) => $recentlyViewed->pluck('id')->search($pet->id));
         
-        return view('pets.show', compact('pet', 'recentPets'));
+        // Return response with cookie
+        return response()
+            ->view('pets.show', compact('pet', 'recentPets'))
+            ->cookie(
+                'recently_viewed',
+                json_encode($recentlyViewed->toArray()),
+                60 * 24 * 7, // 1 week expiration
+                null,
+                null,
+                false, // Secure
+                false  // HttpOnly 
+            );
     }
 
     public function edit(Pet $pet)
